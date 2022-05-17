@@ -6,7 +6,7 @@ public class Army {
 
     private final String name;
 
-    private Optional<General> commander;
+    private Optional<General> commander = Optional.empty();
 
     public Army(String name) {
         this.name = name;
@@ -16,8 +16,8 @@ public class Army {
         return name;
     }
 
-    public void setCommander(String name) {
-        this.commander = Optional.of(new General(name));
+    public void setCommander(General general) {
+        this.commander = Optional.ofNullable(general);
     }
 
     public Optional<General> getCommander() {
