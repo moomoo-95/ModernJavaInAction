@@ -1,13 +1,6 @@
-import moomoo.study.java.ModernJavaInActionMain;
-import moomoo.study.java.module.Army;
-import moomoo.study.java.module.Branch;
-import moomoo.study.java.module.General;
-import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Optional;
 
 public class OptionalTest {
     private static final Logger log = LoggerFactory.getLogger(OptionalTest.class);
