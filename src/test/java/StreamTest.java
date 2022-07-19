@@ -36,6 +36,7 @@ public class StreamTest {
 
     private static List<Transaction> transactions;
 
+    private enum CaloricLevel { DIET, NORMAL, FAT}
 
 
     @BeforeClass
@@ -69,8 +70,8 @@ public class StreamTest {
     }
 
     @Test
-    public void testMain() {
-        log.debug("Stream Test main Start");
+    public void testMain5() {
+        log.debug("Stream chapter5 Test main Start");
 
         // 기존 필터링
         List<Dish> legacyLowCaloricDishes = new ArrayList<>();
@@ -173,7 +174,7 @@ public class StreamTest {
                 .limit(5)
                 .forEach(t -> log.debug("{}", t));
 
-        log.debug("Stream Test main End");
+        log.debug("Stream chapter5 Test main End");
     }
 
     @Test
@@ -215,5 +216,52 @@ public class StreamTest {
         log.debug("8. answer");
         log.debug("{}", transactions.stream().min(Comparator.comparing(Transaction::getValue)));
         log.debug("Stream Test sub End");
+    }
+
+    @Test
+    public void testMain6() {
+        log.debug("Stream chapter6 Test main Start");
+        Comparator<Dish> comparator = Comparator.comparing(Dish::getCalories);
+        Optional<Dish> mostCalorieDish = menu.stream()
+                .collect(Collectors.maxBy(comparator));
+        log.debug("most calorie dish : {}", mostCalorieDish.get());
+        Optional<Dish> leastCalorieDish = menu.stream()
+                .collect(Collectors.minBy(comparator));
+        log.debug("least calorie dish : {}", leastCalorieDish.get());
+
+        int totalCalories = menu.stream().collect(Collectors.summingInt(Dish::getCalories));
+        log.debug("total calories dish : {}", totalCalories);
+        double avgCalories = menu.stream().collect(Collectors.averagingDouble(Dish::getCalories));
+        log.debug("avg calories dish : {}", avgCalories);
+        IntSummaryStatistics summaryStatistics = menu.stream().collect(Collectors.summarizingInt(Dish::getCalories));
+        log.debug("summaryStatistics calories dish : {}", summaryStatistics);
+
+        String shortMenu = menu.stream().map(Dish::toString)
+                .collect(Collectors.joining(", "));
+        log.debug("shortMenu : {}", shortMenu);
+
+        totalCalories = menu.stream().collect(reducing(0, Dish::getCalories, Integer::sum));
+        log.debug("total calories dish : {}", totalCalories);
+        mostCalorieDish = menu.stream().collect(reducing((i, j) -> (i.getCalories() > j.getCalories() ? i : j)));
+        log.debug("most calorie dish : {}", mostCalorieDish.get());
+        leastCalorieDish = menu.stream().collect(reducing((i, j) -> (i.getCalories() < j.getCalories() ? i : j)));
+        log.debug("least calorie dish : {}", leastCalorieDish.get());
+
+        Map<Dish.DishType, List<Dish>> dishesByType = menu.stream().collect(Collectors.groupingBy(Dish::getType));
+        log.debug("dishesByType : {}", dishesByType.toString());
+
+        Map<CaloricLevel, List<Dish>> dishesByCaloricLevel = menu.stream()
+                .collect(Collectors.groupingBy( dish -> {
+                    if(dish.getCalories() <= 400) return CaloricLevel.DIET;
+                    else if (dish.getCalories() > 400 && dish.getCalories() <= 700) return CaloricLevel.NORMAL;
+                    else return CaloricLevel.FAT;
+                }));
+        log.debug("dishesByCaloricLevel : {}", dishesByCaloricLevel.toString());
+
+        Map<Dish.DishType, List<Dish>> caloricDishesByType = menu.stream()
+                .collect(Collectors.groupingBy(Dish::getType, filtering(dish -> dish.getCalories() > 400, toList())));
+        log.debug("caloricDishesByType : {}", caloricDishesByType.toString());
+
+        log.debug("Stream chapter6 Test main End");
     }
 }
