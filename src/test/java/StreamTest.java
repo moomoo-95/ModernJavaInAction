@@ -1,6 +1,4 @@
-import moomoo.study.java.module.Dish;
-import moomoo.study.java.module.Trader;
-import moomoo.study.java.module.Transaction;
+import moomoo.study.java.module.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -13,6 +11,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -25,6 +24,29 @@ public class StreamTest {
     private static final String CITY_CAMBRIDGE = "Cambridge";
     private static final String CITY_MILAN = "Milan";
 
+    private static final String FOOD_PORK = "pork";
+    private static final String FOOD_BEEF = "beef";
+    private static final String FOOD_CHICKEN = "chicken";
+    private static final String FOOD_FRENCH_FRIES = "french fries";
+    private static final String FOOD_RICE = "rice";
+    private static final String FOOD_SEASON_FRUIT = "season fruit";
+    private static final String FOOD_PIZZA = "pizza";
+    private static final String FOOD_PRAWNS = "prawns";
+    private static final String FOOD_SALMON = "salmon";
+
+    private static final String TAG_GREASY = "greasy";
+    private static final String TAG_SALTY = "salty";
+    private static final String TAG_ROASTED = "roasted";
+    private static final String TAG_FRIED = "fried";
+    private static final String TAG_CRISP = "crisp";
+    private static final String TAG_LIGHT = "light";
+    private static final String TAG_NATURAL = "natural";
+    private static final String TAG_FRESH = "fresh";
+    private static final String TAG_TASTY = "TASTY";
+    private static final String TAG_DELICIOUS = "delicious";
+
+
+
     private static final Trader RAOUL = new Trader("Raoul", CITY_CAMBRIDGE);
     private static final Trader MARIO = new Trader("Mario", CITY_MILAN);
     private static final Trader ALAN = new Trader("Alan", CITY_CAMBRIDGE);
@@ -36,21 +58,24 @@ public class StreamTest {
 
     private static List<Transaction> transactions;
 
+    private static Map<String, List<String>> dishTags = new HashMap<>();
+
+
     private enum CaloricLevel { DIET, NORMAL, FAT}
 
 
     @BeforeClass
     public static void setUp() {
         menu = Arrays.asList(
-                new Dish("pork", false, 800, Dish.DishType.MEAT),
-                new Dish("beef", false, 700, Dish.DishType.MEAT),
-                new Dish("chicken", false, 400, Dish.DishType.MEAT),
-                new Dish("french fries", true, 530, Dish.DishType.OTHER),
-                new Dish("rice", true, 350, Dish.DishType.OTHER),
-                new Dish("season fruit", true, 120, Dish.DishType.OTHER),
-                new Dish("pizza", true, 550, Dish.DishType.OTHER),
-                new Dish("prawns", false, 300, Dish.DishType.FISH),
-                new Dish("salmon", false, 450, Dish.DishType.FISH)
+                new Dish(FOOD_PORK, false, 800, Dish.DishType.MEAT),
+                new Dish(FOOD_BEEF, false, 700, Dish.DishType.MEAT),
+                new Dish(FOOD_CHICKEN, false, 400, Dish.DishType.MEAT),
+                new Dish(FOOD_FRENCH_FRIES, true, 530, Dish.DishType.OTHER),
+                new Dish(FOOD_RICE, true, 350, Dish.DishType.OTHER),
+                new Dish(FOOD_SEASON_FRUIT, true, 120, Dish.DishType.OTHER),
+                new Dish(FOOD_PIZZA, true, 550, Dish.DishType.OTHER),
+                new Dish(FOOD_PRAWNS, false, 300, Dish.DishType.FISH),
+                new Dish(FOOD_SALMON, false, 450, Dish.DishType.FISH)
         );
 
         desert = Arrays.asList(
@@ -67,6 +92,16 @@ public class StreamTest {
                 new Transaction(MARIO, 2012, 700),
                 new Transaction(ALAN, 2012, 950)
         );
+
+        dishTags.put(FOOD_PORK, Arrays.asList(TAG_GREASY, TAG_SALTY));
+        dishTags.put(FOOD_BEEF, Arrays.asList(TAG_SALTY, TAG_ROASTED));
+        dishTags.put(FOOD_CHICKEN, Arrays.asList(TAG_FRIED, TAG_CRISP));
+        dishTags.put(FOOD_FRENCH_FRIES, Arrays.asList(TAG_GREASY, TAG_FRIED));
+        dishTags.put(FOOD_RICE, Arrays.asList(TAG_LIGHT, TAG_NATURAL));
+        dishTags.put(FOOD_SEASON_FRUIT, Arrays.asList(TAG_FRESH, TAG_NATURAL));
+        dishTags.put(FOOD_PIZZA, Arrays.asList(TAG_TASTY, TAG_SALTY));
+        dishTags.put(FOOD_PRAWNS, Arrays.asList(TAG_TASTY, TAG_ROASTED));
+        dishTags.put(FOOD_SALMON, Arrays.asList(TAG_DELICIOUS, TAG_FRESH));
     }
 
     @Test
@@ -223,7 +258,7 @@ public class StreamTest {
         log.debug("Stream chapter6 Test main Start");
         Comparator<Dish> comparator = Comparator.comparing(Dish::getCalories);
         Optional<Dish> mostCalorieDish = menu.stream()
-                .collect(Collectors.maxBy(comparator));
+                .collect(Collectors.maxBy(Comparator.comparing(Dish::getCalories)));
         log.debug("most calorie dish : {}", mostCalorieDish.get());
         Optional<Dish> leastCalorieDish = menu.stream()
                 .collect(Collectors.minBy(comparator));
@@ -236,8 +271,7 @@ public class StreamTest {
         IntSummaryStatistics summaryStatistics = menu.stream().collect(Collectors.summarizingInt(Dish::getCalories));
         log.debug("summaryStatistics calories dish : {}", summaryStatistics);
 
-        String shortMenu = menu.stream().map(Dish::toString)
-                .collect(Collectors.joining(", "));
+        String shortMenu = menu.stream().map(Dish::toString).collect(Collectors.joining(", "));
         log.debug("shortMenu : {}", shortMenu);
 
         totalCalories = menu.stream().collect(reducing(0, Dish::getCalories, Integer::sum));
@@ -259,9 +293,118 @@ public class StreamTest {
         log.debug("dishesByCaloricLevel : {}", dishesByCaloricLevel.toString());
 
         Map<Dish.DishType, List<Dish>> caloricDishesByType = menu.stream()
-                .collect(Collectors.groupingBy(Dish::getType, filtering(dish -> dish.getCalories() > 400, toList())));
+                .collect(Collectors.groupingBy(Dish::getType, filtering(dish -> dish.getCalories() > 500, toList())));
         log.debug("caloricDishesByType : {}", caloricDishesByType.toString());
 
+        Map<Dish.DishType, List<String>> dishNamesByType = menu.stream().collect(Collectors.groupingBy(Dish::getType, mapping(Dish::getName, toList())));
+        log.debug("dishNamesByType : {}", dishNamesByType.toString());
+
+        Map<Dish.DishType, Set<String>> dishTagsByType =
+                menu.stream().collect(
+                        Collectors.groupingBy(
+                                Dish::getType,
+                                flatMapping(dish -> dishTags.get(dish.getName()).stream(), toSet())
+                        )
+                );
+        log.debug("dishTagsByType : {}", dishTagsByType.toString());
+
+        Map<Dish.DishType, Map<CaloricLevel, List<Dish>>> dishesByTypeCaloricLevel =
+                menu.stream().collect(
+                        Collectors.groupingBy(Dish::getType,
+                                Collectors.groupingBy(dish -> {
+                                    if(dish.getCalories() <= 400) return CaloricLevel.DIET;
+                                    else if (dish.getCalories() > 400 && dish.getCalories() <= 700) return CaloricLevel.NORMAL;
+                                    else return CaloricLevel.FAT;
+                                })
+                        )
+                );
+        log.debug("dishesByTypeCaloricLevel : {}", dishesByTypeCaloricLevel.toString());
+
+        Map<Dish.DishType, Dish> mostCaloricByType =
+                menu.stream().collect(Collectors.groupingBy(
+                            Dish::getType,
+                            Collectors.collectingAndThen(
+                                Collectors.maxBy(
+                                        Comparator.comparing(Dish::getCalories)
+                                ),
+                                Optional::get
+                            )
+                        )
+                );
+        log.debug("mostCaloricByType : {}", mostCaloricByType.toString());
+        // 단순 분할
+        Map<Boolean, List<Dish>> partitionedMenu =
+                menu.stream().collect(
+                        Collectors.partitioningBy(Dish::isVegetarian)
+                );
+        log.debug("partitionedMenu : {}", partitionedMenu.toString());
+        // 다수준 분할
+        Map<Boolean, Map<Dish.DishType, List<Dish>>> vegetarianDishesByType =
+                menu.stream().collect(
+                        Collectors.partitioningBy(
+                                Dish::isVegetarian,
+                                Collectors.groupingBy(Dish::getType)
+                        )
+                );
+        log.debug("vegetarianDishesByType : {}", vegetarianDishesByType.toString());
+        // 다수준 분할 연산
+        Map<Boolean, Dish> mostCaloricPartitionedByVegetarian =
+                menu.stream().collect(
+                        Collectors.partitioningBy(
+                                Dish::isVegetarian,
+                                Collectors.collectingAndThen(
+                                        Collectors.maxBy(Comparator.comparing(Dish::getCalories)),
+                                        Optional::get
+                                )
+                        )
+                );
+        log.debug("mostCaloricPartitionedByVegetarian : {}", mostCaloricPartitionedByVegetarian.toString());
+
+        Map<Boolean, List<Integer>> partitionPrimes = partitionPrimes(50);
+        log.debug("partitionPrimes1 : {}", partitionPrimes.toString());
+
+        Map<Boolean, List<Integer>> partitionPrimesWithCustomCollector = partitionPrimesWithCustomCollector(50);
+        log.debug("partitionPrimes2 : {}", partitionPrimesWithCustomCollector.toString());
+
+        List<Dish> dishesByFactory = menu.stream().collect(toList());
+        List<Dish> dishesByInstance = menu.stream().collect(new ToListCollector<>());
+        List<Dish> dishes = menu.stream().collect(ArrayList::new, List::add, List::addAll);
+
         log.debug("Stream chapter6 Test main End");
+    }
+
+    @Test
+    public void collectorHarness() {
+        long fastest = Long.MAX_VALUE;
+        for(int i = 0; i < 10; i++) {
+            long start = System.nanoTime();
+            partitionPrimes(1_000_000);
+            long duration = (System.nanoTime() - start) / 1_000_000;
+            if(duration < fastest) fastest = duration;
+        }
+        log.debug("1. Fastest execution done in {} ms", fastest);
+
+        fastest = Long.MAX_VALUE;
+        for(int i = 0; i < 10; i++) {
+            long start = System.nanoTime();
+            partitionPrimesWithCustomCollector(1_000_000);
+            long duration = (System.nanoTime() - start) / 1_000_000;
+            if(duration < fastest) fastest = duration;
+        }
+        log.debug("2. Fastest execution done in {} ms", fastest);
+
+    }
+
+    public boolean isPrime(int number) {
+        int numberSquareRoot = (int) Math.sqrt(number);
+        return IntStream.rangeClosed(2, numberSquareRoot).noneMatch( i -> number % i == 0);
+    }
+
+    public Map<Boolean, List<Integer>> partitionPrimes(int number) {
+        return IntStream.rangeClosed(2, number).boxed().collect(partitioningBy(n -> isPrime(n)));
+    }
+
+    public Map<Boolean, List<Integer>> partitionPrimesWithCustomCollector(int number) {
+        return IntStream.rangeClosed(2, number).boxed().collect(new PrimeNumbersCollector());
     }
 }
