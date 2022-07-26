@@ -6,7 +6,6 @@ import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 public class ToListCollector<T> implements Collector<T, List<T>, List<T>> {
     // 수집 연산의 시발점

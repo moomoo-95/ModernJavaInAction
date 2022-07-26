@@ -5,16 +5,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
+import java.util.stream.*;
 
 import static java.util.stream.Collectors.*;
 
@@ -44,6 +40,17 @@ public class StreamTest {
     private static final String TAG_FRESH = "fresh";
     private static final String TAG_TASTY = "TASTY";
     private static final String TAG_DELICIOUS = "delicious";
+
+    private static final String SENTENCE = "In the culture of simulation, experiences on the Internet figure prominently. " +
+            "In cyberspace, we can talk, exchange ideas, and assume personae of our own creation. " +
+            "In an interactive computer game inspired by Star Trek, thousands of players spend up to eighty hours a week participating in intergalactic exploration and wars. " +
+            "They create characters who have romantic encounters, hold jobs and collect paychecks, attend rituals and celebrations, fall in love and get married. " +
+            "“This is more real than my real life,” says a character who turns out to be a man playing a woman. " +
+            "In this game the self is constructed and the rules of social interaction are built, not received. " +
+            "In another text-based game, each of nearly ten thousand players creates a character or several characters, specifying their genders and other physical and psychological attributes. " +
+            "The characters need not be human and there are more than two genders. " +
+            "Players are invited to help build the computer world itself. " +
+            "Indeed, the Internet links millions of people in new spaces that are changing the way of our thinking, the nature of our sexuality, the form of our communities, and our very identities.";
 
 
 
@@ -370,7 +377,28 @@ public class StreamTest {
         List<Dish> dishesByInstance = menu.stream().collect(new ToListCollector<>());
         List<Dish> dishes = menu.stream().collect(ArrayList::new, List::add, List::addAll);
 
+        log.debug("forkJoin : {}", forkJoinSum(100));
+
+
         log.debug("Stream chapter6 Test main End");
+    }
+
+    @Test
+    public void testMain7() {
+        log.debug("Stream chapter7 Test main Start");
+
+        log.debug("forkJoin : {}", forkJoinSum(100));
+
+        log.debug("Found {} words", countWordsIteratively(SENTENCE));
+        Stream<Character> stream = IntStream.range(0, SENTENCE.length()).mapToObj(SENTENCE::charAt);
+        log.debug("Found {} words", counterWords(stream));
+
+        Spliterator<Character> spliterator = new WordCounterSpliterator(SENTENCE);
+        Stream<Character> stream1 = StreamSupport.stream(spliterator, true);
+        log.debug("Found {} words", counterWords(stream1));
+
+
+        log.debug("Stream chapter7 Test main End");
     }
 
     @Test
@@ -392,7 +420,6 @@ public class StreamTest {
             if(duration < fastest) fastest = duration;
         }
         log.debug("2. Fastest execution done in {} ms", fastest);
-
     }
 
     public boolean isPrime(int number) {
@@ -406,5 +433,34 @@ public class StreamTest {
 
     public Map<Boolean, List<Integer>> partitionPrimesWithCustomCollector(int number) {
         return IntStream.rangeClosed(2, number).boxed().collect(new PrimeNumbersCollector());
+    }
+
+    public long forkJoinSum(long n) {
+        long[] numbers = LongStream.rangeClosed(1, n).toArray();
+        ForkJoinTask<Long> task = new ForkJoinSumCalculator(numbers);
+        return new ForkJoinPool().invoke(task);
+    }
+
+    /**
+     * 문자열 단어수 계산하는 메서드
+     */
+    public int countWordsIteratively(String s) {
+        int counter = 0;
+        boolean lastSpace = true;
+        for (char c : s.toCharArray()) {
+            // 공백문자인 경우 true
+            if(Character.isWhitespace(c)) {
+                lastSpace = true;
+            } else {
+                if (lastSpace) counter++;
+                lastSpace = false;
+            }
+        }
+        return counter;
+    }
+
+    public int counterWords(Stream<Character> stream) {
+        WordCounter wordCounter = stream.reduce(new WordCounter(0, true), WordCounter::accumulate, WordCounter::combine);
+        return wordCounter.getCounter();
     }
 }
