@@ -9,27 +9,17 @@ import java.awt.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
 import java.util.function.*;
+
+import static base.Config.INVENTORY;
+import static base.Config.NUMBERS;
 
 public class LambdaTest {
     private static final Logger log = LoggerFactory.getLogger(LambdaTest.class);
 
-    private static List<Apple> inventory;
-    private static List<Integer> numbers;
     @BeforeClass
     public static void setUp() {
-        inventory = Arrays.asList(
-                new Apple(Color.red, 110),
-                new Apple(Color.green, 113),
-                new Apple(Color.red, 213),
-                new Apple(Color.white, 164),
-                new Apple(Color.green, 47),
-                new Apple(Color.red, 315)
-        );
-        numbers = Arrays.asList(2, 321, 432, 3245653, 123123, 2354, 12355);
     }
 
     @Test
@@ -37,8 +27,8 @@ public class LambdaTest {
         log.debug("Lambda Test Start");
 
         // Predicate
-        CommonUtil.filter(inventory, apple -> Color.red.equals(apple.getColor())).forEach(apple -> log.debug("{} {}", apple.getColor(), apple.getWeight()));
-        CommonUtil.filter(numbers, number -> number > 10000).forEach( number -> log.debug("{}", number));
+        CommonUtil.filter(INVENTORY, apple -> Color.red.equals(apple.getColor())).forEach(apple -> log.debug("{} {}", apple.getColor(), apple.getWeight()));
+        CommonUtil.filter(NUMBERS, number -> number > 10000).forEach(number -> log.debug("{}", number));
 
         // 익명 클래스
         Comparator<Apple> byWeightCreatedByAnonymousClass = new Comparator<Apple>() {
@@ -91,11 +81,11 @@ public class LambdaTest {
         // Comparator
         Comparator<Apple> appleComparator = Comparator.comparing(Apple::getWeight);
         // 오름차순
-        inventory.sort(appleComparator.reversed());
+        INVENTORY.sort(appleComparator.reversed());
         // 내림차순
-        inventory.sort(appleComparator.reversed());
+        INVENTORY.sort(appleComparator.reversed());
         // 두 번째 비교자 설정
-        inventory.sort(appleComparator.reversed().thenComparing(Apple::getColorOrder));
+        INVENTORY.sort(appleComparator.reversed().thenComparing(Apple::getColorOrder));
 
         // Predicate
         // red apple
