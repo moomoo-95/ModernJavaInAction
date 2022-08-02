@@ -1,11 +1,17 @@
 import moomoo.study.java.module.Apple;
 import moomoo.study.java.module.Dish;
+import moomoo.study.java.module.Point;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -206,10 +212,266 @@ public class CollectionTest {
         // 특정 조건에서만 메시지가 생성되도록 오버로드된 log 메서드
         logger.log(Level.FINER, () -> "log finer");
 
+        // 전략 패턴
+        Validator numericValidator = new Validator(new IsNumeric());
+        Validator lowerCaseValidator = new Validator(new IsAllLowerCase());
 
+        String a = "aaa";
 
+        log.debug("{} isNumber : {} , is lowerCase : {}", a, numericValidator.validate(a), lowerCaseValidator.validate(a));
+        a = "111";
+        log.debug("{} isNumber : {} , is lowerCase : {}", a, numericValidator.validate(a), lowerCaseValidator.validate(a));
+        a = "Acc";
+        log.debug("{} isNumber : {} , is lowerCase : {}", a, numericValidator.validate(a), lowerCaseValidator.validate(a));
+        // 전략 패턴 by 람다
+        Validator numericValidatorByLambda = new Validator( s -> s.matches("\\d+"));
+        Validator lowerCaseValidatorByLambda = new Validator( s -> s.matches("[a-z]+"));
+        a = "jack";
+        log.debug("{} isNumber : {} , is lowerCase : {}", a, numericValidatorByLambda.validate(a), lowerCaseValidatorByLambda.validate(a));
 
+        // 템플릿 메서드 디자인 패턴
+        WayOfGreeting wayOfGreetingHi = new WayOfGreeting() {
+            @Override
+            void uniqueGreet(String name) {
+                log.debug("{} hi", name);
+            }
+        };
+        WayOfGreeting wayOfGreetingHello = new WayOfGreeting() {
+            @Override
+            void uniqueGreet(String name) {
+                log.debug("{} Hello", name);
+            }
+        };
+        wayOfGreetingHi.greet(a);
+        wayOfGreetingHello.greet(a);
+
+        new WayOfGreetingByLambda().greet(a, s -> log.debug("{} hi~ h.i~", s));
+        new WayOfGreetingByLambda().greet(a, s -> log.debug("{} Hello", s));
+
+        // 옵저버 패턴
+        Feed feed = new Feed();
+        feed.registerObserver(new NYTimes());
+        feed.registerObserver(new Guardian());
+        feed.registerObserver(new LeMonde());
+
+        feed.registerObserver(tweet -> {
+            if (tweet != null && tweet.contains("money")) { log.debug("Breaking news in NY! {}", tweet); }
+        });
+
+        feed.registerObserver(tweet -> {
+            if (tweet != null && tweet.contains("queen")) { log.debug("Yet more news from London... {}", tweet); }
+        });
+
+        feed.registerObserver(tweet -> {
+            if (tweet != null && tweet.contains("wine")) { log.debug("Today cheese, wine and news! {}", tweet); }
+        });
+        feed.notifyObservers("The queen said her favourite book is Modern Java in Action!");
+
+        // 의무 체인 패턴
+        String str = "Aren't labdas really sexy?!";
+        ProcessingObject<String> p1 = new HeaderTextProcessing();
+        ProcessingObject<String> p2 = new SpellCheckerProcessing();
+        p1.setSuccessor(p2);
+        log.debug("{}", p1.handle(str));
+
+        UnaryOperator<String> headerTextProcessing = (String input) -> "From Raoul, Mario and Alan : " + input;
+        UnaryOperator<String> spellCheckerProcessing = (String input) -> input.replaceAll("labda", "lambda");
+        Function<String, String> pipeLine = headerTextProcessing.andThen(spellCheckerProcessing);
+        log.debug("{}", pipeLine.apply(str));
+
+        // 팩토리 디자인 패턴
+        Product product1 = ProductFactory.createProduct("loan");
+        Product product2 = ProductFactoryByLambda.createProduct("loan");
+
+        try {
+            testMoveRightBy();
+            testComparingTwoPoints();
+            testMoveAllPointsRightBy();
+        } catch (Exception e) {
+            log.error("CollectionTest.Lambda Testing ", e);
+        }
 
         log.debug("Collection chapter9 Test main End");
     }
+
+    @Test
+    public void testMoveRightBy() throws Exception {
+        Point p1 = new Point(5, 5);
+        Point p2 = p1.moveRightBy(10);
+        Assert.assertEquals(15, p2.getX());
+        Assert.assertEquals(5, p2.getY());
+    }
+
+    @Test
+    public void testComparingTwoPoints() throws Exception {
+        Point p1 = new Point(10, 15);
+        Point p2 = new Point(15, 20);
+        int result = Point.compareByXAndThenY.compare(p1, p2);
+        Assert.assertTrue(result < 0);
+    }
+
+    @Test
+    public void testMoveAllPointsRightBy() throws Exception {
+        List<Point> points = Arrays.asList(new Point(5, 5), new Point(10, 5));
+        List<Point> expectedPoints = Arrays.asList(new Point(15, 5), new Point(20, 5));
+        List<Point> newPoints = Point.moveAllPointsRightBy(points, 10);
+        Assert.assertEquals(expectedPoints, newPoints);
+    }
+
+    // 전략 패턴
+    public interface ValidationStrategy {
+        boolean execute(String s);
+    }
+
+    public class IsAllLowerCase implements ValidationStrategy {
+        @Override
+        public boolean execute(String s) {
+            return s.matches("[a-z]+");
+        }
+    }
+
+    public class IsNumeric implements ValidationStrategy {
+        @Override
+        public boolean execute(String s) {
+            return s.matches("\\d+");
+        }
+    }
+
+    public class Validator {
+        private final ValidationStrategy strategy;
+
+        public Validator(ValidationStrategy strategy) {
+            this.strategy = strategy;
+        }
+
+        public boolean validate(String s) {
+            return strategy.execute(s);
+        }
+    }
+    // 템플릿 메서드 디자인 패턴
+    abstract class WayOfGreeting {
+        public void greet(String name) {
+            uniqueGreet(name);
+        }
+        abstract void uniqueGreet(String name);
+    }
+
+    class WayOfGreetingByLambda {
+        public void greet(String name, Consumer<String> uniqueGreet) {
+            uniqueGreet.accept(name);
+        }
+    }
+    // 옵저버 패턴
+    interface Observer {
+        void notify(String tweet);
+    }
+
+    class NYTimes implements Observer {
+        @Override
+        public void notify(String tweet) {
+            if (tweet != null && tweet.contains("money")) {
+                log.debug("Breaking news in NY! {}", tweet);
+            }
+        }
+    }
+
+    class Guardian implements Observer {
+        @Override
+        public void notify(String tweet) {
+            if (tweet != null && tweet.contains("queen")) {
+                log.debug("Yet more news from London... {}", tweet);
+            }
+        }
+    }
+
+    class LeMonde implements Observer {
+        @Override
+        public void notify(String tweet) {
+            if (tweet != null && tweet.contains("wine")) {
+                log.debug("Today cheese, wine and news! {}", tweet);
+            }
+        }
+    }
+
+    interface Subject {
+        void registerObserver(Observer o);
+        void notifyObservers(String tweet);
+    }
+
+    class Feed implements Subject{
+        private final List<Observer> observers = new ArrayList<>();
+
+        @Override
+        public void registerObserver(Observer o) {
+            this.observers.add(o);
+        }
+
+        @Override
+        public void notifyObservers(String tweet) {
+            observers.forEach(o -> o.notify(tweet));
+        }
+    }
+
+    // 의무 체인 패턴
+    public abstract class ProcessingObject<T> {
+        protected ProcessingObject<T> successor;
+        public void setSuccessor(ProcessingObject<T> successor) {
+            this.successor = successor;
+        }
+        public T handle(T input) {
+            T r = handleWork(input);
+            if(successor != null) {
+                return successor.handle(r);
+            }
+            return r;
+        }
+        abstract protected T handleWork(T input);
+    }
+
+    public class HeaderTextProcessing extends ProcessingObject<String> {
+        @Override
+        protected String handleWork(String input) {
+            return "From Raoul, Mario and Alan : " + input;
+        }
+    }
+
+    public class SpellCheckerProcessing extends ProcessingObject<String> {
+        @Override
+        protected String handleWork(String input) {
+            return input.replaceAll("labda", "lambda");
+        }
+    }
+
+    // 팩토리 디자인 패턴
+    public static class ProductFactory {
+        public static Product createProduct(String name) {
+            switch (name) {
+                case "loan": return new Loan();
+                case "stock": return new Stock();
+                case "bond": return new Bond();
+                default: throw new RuntimeException("No Such Product " + name);
+            }
+        }
+    }
+
+interface Product {}
+
+static class Loan implements Product{};
+static class Stock implements Product{};
+static class Bond implements Product{};
+
+public static class ProductFactoryByLambda {
+    private static final Map<String, Supplier<Product>> map = new HashMap<>();
+    static {
+        map.put("loan", Loan::new);
+        map.put("stock", Stock::new);
+        map.put("bond", Bond::new);
+    }
+
+    public static Product createProduct(String name) {
+        Supplier<Product> p = map.get(name);
+        if (p != null) return p.get();
+        throw new RuntimeException("No Such Product " + name);
+    }
+}
 }
