@@ -60,9 +60,6 @@ public class DateTest {
         log.debug("p : {}", p1.getMonths());
         log.debug("p : {}", p1.getDays());
 
-
-
-
         log.debug("Date chapter12 Test main End");
     }
 }
